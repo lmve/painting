@@ -52,7 +52,7 @@ Mkfile.old
 dkms.conf
 
 build/
-
+.vscode/
 # file system image
 fs.img
 
