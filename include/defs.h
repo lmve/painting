@@ -77,6 +77,9 @@ void        clockintr();
 
 // bio.c
 void        binit();
+struct buf* bread(uint dev, uint sectorno);
+void        bwrite(struct buf *);
+void        brelse(struct buf *);
 
 
 // spinlock.c
@@ -91,6 +94,7 @@ int       holding(struct spinlock *);
 void      initsleeplock(struct sleeplock *, char *name);
 void      acquiresleeplock(struct sleeplock *);
 int       holdingsleep(struct sleeplock *);
+void      releasesleeplock(struct sleeplock *);
 
 // trap.c
 void      trapinithart();
@@ -108,8 +112,14 @@ void      plic_complete(int);
 // virtio.c
 void      devinit();
 void      virtiointr();
-void      virtioread();
-void      virtiowrite();
+void      Virtioread(struct buf* buf, int sectorno);
+void      Virtiowrite(struct buf* buf, int sectorno);
 
 // syscall.c
 void      syscall(void);
+
+// disk.c
+void disk_init();
+void disk_read(struct buf* b);
+void disk_write(struct buf* b);
+void disk_intr();

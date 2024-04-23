@@ -6,3 +6,5 @@ typedef unsigned long size_t;
 typedef unsigned char uchar;
 
 typedef unsigned int  uint32;
+
+#define NULL 0

@@ -7,6 +7,7 @@
 // #ifdef QEMU
 #define VIRTIO0 0x10001000L
 #define VIRTIO_IRQ 1
+
 // #endif // QEMU
 
 #define DMA0_IRQ 27

@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "types.h": "c",
+        "buf.h": "c",
+        "defs.h": "c",
+        "param.h": "c",
+        "sleeplock.h": "c",
+        "virtio.h": "c"
+    }
+}

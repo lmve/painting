@@ -40,3 +40,13 @@ int holdingsleep(struct sleeplock *lk)
   release(&lk->lk);
   return r;
 }
+
+void
+releasesleeplock(struct sleeplock *lk)
+{
+  acquire(&lk->lk);
+  lk->locked = 0;
+  lk->pid = 0;
+  wakeup(lk);
+  release(&lk->lk);
+}

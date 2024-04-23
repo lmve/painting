@@ -1,9 +1,15 @@
+/*
+ * virtio_disk.c 虚拟磁盘驱动程序
+*/
 #include "types.h"
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
 #include "spinlock.h"
+#include "sleeplock.h"
+#include "buf.h"
 #include "virtio.h"
+#include "proc.h"
 #include "defs.h"
 
 // 私有结构体
@@ -21,7 +27,7 @@ static struct disk {
   // that the driver would like the device to process.  it only
   // includes the head descriptor of each chain. the ring has
   // NUM elements.
-  struct virtq_avail *avail;
+  struct virtq_avail *avail;  //some thing different.
 
   // a ring in which the device writes descriptor numbers that
   // the device has finished processing (just the head of each chain).
@@ -36,45 +42,69 @@ static struct disk {
   // for use when completion interrupt arrives.
   // indexed by first descriptor index of chain.
   struct {
-    char *buf;      // @s xv6 -> struct buf
+    struct buf *buf;      // @s xv6 -> struct buf
     int finish;
     char status;
   } info[NUM];
 
-  // disk command headers.
-  // one-for-one with descriptors, for convenience.
+  // 用于存储磁盘命令头信息。
+  // 与描述符一一对应
   struct virtio_blk_req ops[NUM];
   
   struct spinlock vdisk_lock;
   
 } disk;
 
+
+/*
+ * * * * * * * * * * * * * * * * 
+ * 虚拟设备基本启动流程
+ * * * * * * * * * * * * * * * * 
+ * 1.重置设备，设置状态寄存器为0即可。
+ * 2.设置状态寄存器Acknowladge状态位，OS识别到设备
+ * 3.设置状态寄存器Driver状态位，OS知道如何驱动设备
+ * 4.读取设备features，做设备状态协商。
+ * 5.设置Features_OK状态位，驱动不再接收新的工作特性
+ * 6.再次读取设备状态，确保已经设置Features_OK状态位。
+ * 7.执行特定设备的设置，包括虚拟队列等(虚拟队列配置流程后方详细展开)
+ * 8.设置DRIVER_OK 状态位，此时设备就活起来了，是的，非常优雅，不愧是标准。(原话：At this point the device is “live")
+ * 
+ * * * * * * * * * * * * * * * * * * 
+ * 设备启动中虚拟队列基本配置流程
+ * * * * * * * * * * * * * * * * * * 
+ * 1.选择要使用的队列，将它的下标写入QueueSel，xv6使用默认的0号队列
+ * 2.检查QueueReady寄存器判断队列是否就绪
+ * 3.读取QueueNumMax寄存器，得到设备支持的最大队列大小
+ * 4.给队列分配内存空间，确保物理上连续
+ * 5.通过写入QueueNum通知设备驱动使用的队列大小
+ * 6.写寄存器组：QueueDescLow/QueueDescHigh, QueueDriverLow/QueueDriverHigh and QueueDeviceLow/QueueDeviceHigh分别写入Descriptor Table Available Ring和Used Ring的64位地址。
+ * 7.向QueueReady寄存器写1。准备完毕。
+*/
 void
 devinit()
 {
   uint32 status = 0;
-
+  // 初始化锁
   initlock(&disk.vdisk_lock, "virtio_disk");
-
+  /* 判断只读寄存器的值，确认设备正确 */
   if(*R(VIRTIO_MMIO_MAGIC_VALUE) != 0x74726976 ||
      *R(VIRTIO_MMIO_VERSION) != 1 ||
      *R(VIRTIO_MMIO_DEVICE_ID) != 2 ||
      *R(VIRTIO_MMIO_VENDOR_ID) != 0x554d4551){
     panic("could not find virtio disk");
   }
-  
-  // reset device
+  /* 1. 重置设备 */
   *R(VIRTIO_MMIO_STATUS) = status;
 
-  // set ACKNOWLEDGE status bit
+  /* 2.OS 识别到设备 */
   status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
   *R(VIRTIO_MMIO_STATUS) = status;
 
-  // set DRIVER status bit
+  /*3.OS知道如何驱动设备 */ 
   status |= VIRTIO_CONFIG_S_DRIVER;
   *R(VIRTIO_MMIO_STATUS) = status;
 
-  // negotiate features
+  /* 4.读取设备features，做设备状态协商。*/
   uint64 features = *R(VIRTIO_MMIO_DEVICE_FEATURES);
   features &= ~(1 << VIRTIO_BLK_F_RO);
   features &= ~(1 << VIRTIO_BLK_F_SCSI);
@@ -108,7 +138,7 @@ devinit()
   if(max < NUM)
     panic("virtio disk max queue too short");
 
-  // allocate and zero queue memory.
+  // 分配物理地址连续空间
   disk.desc = kalloc();
   disk.avail = kalloc();
   disk.used = kalloc();
@@ -132,7 +162,7 @@ devinit()
   // queue is ready.
   *R(VIRTIO_MMIO_QUEUE_READY) = 0x1;
 
-  // all NUM descriptors start out unused.
+  // 记录descriptor的可用情况，为1，可用，0不可用
   for(int i = 0; i < NUM; i++)
     disk.free[i] = 1;
 
@@ -172,7 +202,7 @@ free_desc(int i)
   wakeup(&disk.free[0]);
 }
 
-// free a chain of descriptors.
+/*释放一个描述符链*/
 static void
 free_chain(int i)
 {
@@ -204,7 +234,7 @@ alloc3_desc(int *idx)
 }
 
 static void
-virtioRw(char *buf, uint64 sector, int write)   // sector 磁盘的扇区 buf 存放数据的缓冲区 write 读/写磁盘
+virtioRw(struct buf *buf, uint64 sector, int write)   // sector 磁盘的扇区 buf 存放数据的缓冲区 write 读/写磁盘
 {
   acquire(&disk.vdisk_lock);
 
@@ -320,14 +350,14 @@ virtiointr()
 // 提供使用的接口函数
 // disk read
 void
-Virtioread(char *buf, int sectorno)
+Virtioread(struct buf* buf, int sectorno)
 {
   virtioRw(buf, sectorno, 0);
 }
 
 // disk write
 void
-Virtiowrite(char *buf, int sectorno)
+Virtiowrite(struct buf* buf, int sectorno)
 {
   virtioRw(buf, sectorno, 1);
 }
