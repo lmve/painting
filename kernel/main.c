@@ -3,9 +3,12 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "buddy.h"
-#include "defs.h"
-#include "sbi.h"
 
+#include "sbi.h"
+#include "spinlock.h"
+#include "sleeplock.h"
+#include "fat32.h"
+#include "defs.h"
 volatile static int started = 0;
 
 typedef void (*function_t)();
@@ -46,6 +49,7 @@ main(uint64 hartid, uint64 dtb_pa)
     devinit();
     inittasktable();
     initfirsttask();
+    fat32_init();
     int i;
     for(i = 0; i < NCPU; i++)
     {

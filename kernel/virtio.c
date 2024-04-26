@@ -171,6 +171,8 @@ devinit()
   *R(VIRTIO_MMIO_STATUS) = status;
 
   // plic.c and trap.c arrange for interrupts from VIRTIO0_IRQ.
+  /* for test */
+  printf("virtio_disk: init done\n");
 }
 
 // find a free descriptor, mark it non-free, return its index.
@@ -236,6 +238,13 @@ alloc3_desc(int *idx)
 static void
 virtioRw(struct buf *buf, uint64 sector, int write)   // sector 磁盘的扇区 buf 存放数据的缓冲区 write 读/写磁盘
 {
+  /* for test */
+  if (write)
+    printf("virtio_disk: write sector %d\n", sector);
+  else
+    printf("virtio_disk: read sector %d\n", sector);
+
+
   acquire(&disk.vdisk_lock);
 
   int idx[3];
@@ -309,6 +318,9 @@ virtioRw(struct buf *buf, uint64 sector, int write)   // sector 磁盘的扇区 
   disk.info[idx[0]].buf = 0;
   free_chain(idx[0]);
   release(&disk.vdisk_lock);
+
+  /* for test */
+  printf("virtio read down.\n");
 }
 
 // trap.c 在处理设备发出的中断时需要调用

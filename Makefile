@@ -29,6 +29,8 @@ OBJS = \
 			 $T/virtio.o\
 			 $T/kernelvec.o\
 			 $T/disk.o\
+			 $T/fat32.o\
+			 $T/file.o\
 
 $T/%.o: $K/%.S
 	$(shell mkdir -p $(T))

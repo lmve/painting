@@ -130,8 +130,9 @@ proc_pagetable(struct proc *p)
   return pagetable;
 }
 
-int
-either_copy(int user, uint64 dst, void *src, uint len)
+// int
+// either_copy(int user, uint64 dst, void *src, uint len)
+int either_copy(int user_dst, uint64 dst, void *src, uint64 len)
 {
   while(1)
     ;

@@ -16,7 +16,7 @@ struct cpu* mycpu();
 struct proc*myproc();
 int         killed(struct proc *);
 void        sleep(void *, struct spinlock *);
-int         either_copy(int, uint64, void *, uint);
+int         either_copy(int user_dst, uint64 dst, void *src, uint64 len);
 void        cpuinit(uint64);
 void        sched();
 void        reparent(struct proc *);
@@ -32,7 +32,13 @@ void        wakeup(void *);
 
 // string.c
 void *      memset(void *addr, int c, uint size);
-void *      memmove(void *, void *, int);
+void*       memmove(void *dst, const void *src, uint n);
+int         strncmp(const char *p, const char *q, uint n);
+char*       strncpy(char *s, const char *t, int n);
+char*       strchr(const char *s, char c);
+int         strlen(const char *s);
+void snstr(char *dst, uint16 const *src, int len);
+
 
 // printf.c
 void        printfinit();
@@ -69,6 +75,7 @@ void        uvmfree(pagetable_t, uint64);
 void        uvmunmap(pagetable_t, uint64, uint64, int);
 uint64      uvmdealloc(pagetable_t, uint64, uint64);
 uint64      walkaddr(pagetable_t, uint64);
+int         copyout2(uint64 dstva, char *src, uint64 len);
 
 // timer.c
 void        timerinit();
@@ -123,3 +130,23 @@ void disk_init();
 void disk_read(struct buf* b);
 void disk_write(struct buf* b);
 void disk_intr();
+
+//fat32.c
+int fat32_init();
+struct dirent *dirlookup(struct dirent *dp, char *filename, uint *poff);
+char*           formatname(char *name);
+void            emake(struct dirent *dp, struct dirent *ep, uint off);
+struct dirent*  ealloc(struct dirent *dp, char *name, int attr);
+struct dirent*  edup(struct dirent *entry);
+void            eupdate(struct dirent *entry);
+void            etrunc(struct dirent *entry);
+void            eremove(struct dirent *entry);
+void            eput(struct dirent *entry);
+void            estat(struct dirent *ep, struct stat *st);
+void            elock(struct dirent *entry);
+void            eunlock(struct dirent *entry);
+int             enext(struct dirent *dp, struct dirent *ep, uint off, int *count);
+struct dirent*  ename(char *path);
+struct dirent*  enameparent(char *path, char *name);
+int             eread(struct dirent *entry, int user_dst, uint64 dst, uint off, uint n);
+int             ewrite(struct dirent *entry, int user_src, uint64 src, uint off, uint n);

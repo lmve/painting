@@ -36,3 +36,60 @@ memmove(void *dst, const void *src, uint n)
 
   return dst;
 }
+
+int strncmp(const char *p, const char *q, uint n)
+{
+  while(n > 0 && *p && *p == *q)
+    n--, p++, q++;
+  if(n == 0)
+    return 0;
+  return (uchar)*p - (uchar)*q;
+}
+
+char*
+strncpy(char *s, const char *t, int n)
+{
+  char *os;
+
+  os = s;
+  while(n-- > 0 && (*s++ = *t++) != 0)
+    ;
+  while(n-- > 0)
+    *s++ = 0;
+  return os;
+}
+/*
+* 在字符串中查找指定字符的第一个出现位置
+*/
+char*
+strchr(const char *s, char c)
+{
+  for(; *s; s++)
+    if(*s == c)
+      return (char*)s;
+  return 0;
+}
+
+int
+strlen(const char *s)
+{
+  int n;
+
+  for(n = 0; s[n]; n++)
+    ;
+  return n;
+}
+
+/*
+ * 此函数实现了将宽字符源字符串按照单字节字符编码
+ （如ASCII）转换为长度不超过len的目标字符串，
+  并在目标字符串未填满时用空字符补足剩余空间。
+*/
+void snstr(char *dst, uint16 const *src, int len) {
+  while (len -- && *src) {
+    *dst++ = (uchar)(*src & 0xff);
+    src ++;
+  }
+  while(len-- > 0)
+    *dst++ = 0;
+}

@@ -1,6 +1,10 @@
 #include "types.h"
 #include "memlayout.h"
 #include "riscv.h"
+#include "param.h"
+#include "spinlock.h"
+#include "sleeplock.h"
+#include "proc.h"
 #include "defs.h"
 
 extern char etext[];
@@ -279,7 +283,16 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   }
   return 0;
 }
-
+int
+copyout2(uint64 dstva, char *src, uint64 len)
+{
+  uint64 sz = myproc()->sz;
+  if (dstva + len > sz || dstva >= sz) {
+    return -1;
+  }
+  memmove((void *)dstva, src, len);
+  return 0;
+}
 // Copy from user to kernel.
 // Copy len bytes to dst from virtual address srcva in a given page table.
 // Return 0 on success, -1 on error.

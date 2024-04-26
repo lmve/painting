@@ -10,3 +10,4 @@
 #define MAXOPBLOCKS 10
 #define MAXPATH 64
 #define NOMMAPFILE 60
+#define NFILE   100  /* open files per system */

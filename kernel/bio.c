@@ -49,6 +49,7 @@ binit(void)
   }
   /* for test */
   printf("binit\n");
+  // printf("%d\n",bread(0,0));
 
 }
 
@@ -126,9 +127,11 @@ brelse(struct buf *b)
 struct buf* 
 bread(uint dev, uint sectorno) {
   struct buf *b;
-
+  b = NULL;
   b = bget(dev, sectorno);
   if (!b->valid) {
+    /* for test */
+    printf("[into disk_read] \n");
     disk_read(b);
     b->valid = 1;
   }
