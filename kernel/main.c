@@ -49,7 +49,9 @@ main(uint64 hartid, uint64 dtb_pa)
     devinit();
     inittasktable();
     initfirsttask();
-    fat32_init();
+    fileinit();
+    // fat32_init()
+    
     int i;
     for(i = 0; i < NCPU; i++)
     {

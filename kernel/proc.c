@@ -143,6 +143,7 @@ int either_copy(int user_dst, uint64 dst, void *src, uint64 len)
 void
 forkret(void)
 {
+  printf("[intoforkret]\n");
   static int first = 1;
 
   // Still holding p->lock from scheduler.
@@ -153,6 +154,7 @@ forkret(void)
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
     first = 0;
+    fat32_init();
     TODO();
   }
 

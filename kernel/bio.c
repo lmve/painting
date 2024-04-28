@@ -82,10 +82,17 @@ bget(uint dev, uint sectorno)
   // Not cached.
   // Recycle the least recently used (LRU) unused buffer.
   for(b = bcache.head.prev; b != &bcache.head; b = b->prev){
-    if(b->refcnt == 0) {
+    printf("[into bget] \n");
+    printf("b-refcnt = %d \n",b->refcnt);
+    printf("b->dev = %d\n",b->dev);
+    printf("b->sectorno = %d\n",b->sectorno);
+
+    if(b->refcnt != 0) {
+        continue;
+    } else {
+      b->valid = 0;
       b->dev = dev;
       b->sectorno = sectorno;
-      b->valid = 0;
       b->refcnt = 1;
       release(&bcache.lock);
       acquiresleeplock(&b->lock);
@@ -129,6 +136,7 @@ bread(uint dev, uint sectorno) {
   struct buf *b;
   b = NULL;
   b = bget(dev, sectorno);
+  printf("[into bread] \n");
   if (!b->valid) {
     /* for test */
     printf("[into disk_read] \n");

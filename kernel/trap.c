@@ -168,10 +168,10 @@ devintr()
 void 
 kerneltrap()
 {
-  int which_dev = 0;
-  uint64 sepc = r_sepc();
-  uint64 sstatus = r_sstatus();
-  uint64 scause = r_scause();
+  int which_dev = 0;  //用于识别设备中断的变量
+  uint64 sepc = r_sepc();     //获取当前执行程序的地址
+  uint64 sstatus = r_sstatus(); //获取状态寄存器
+  uint64 scause = r_scause();   //获取中断原因
   
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
